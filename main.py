@@ -1,48 +1,38 @@
-"""Simple terminal task manager"""
-def main():
-    tasks = []
-    while True:
-        print("\n1. List 2. Add 3. Complete 4. Delete 5. Quit")
-        choice = input("Choose: ").strip()
-        if choice == "1":
-            if not tasks:
-                print("No tasks.")
-            else:
-                for i, t in enumerate(tasks, 1):
-                    status = "✓" if t["done"] else "✗"
-                    print(f"{i}. [{status}] {t['desc']}")
-        elif choice == "2":
-            desc = input("Task: ").strip()
-            if desc:
-                tasks.append({"desc": desc, "done": False})
-                print("Added.")
-        elif choice == "3":
-            idx = input("Task # to complete: ").strip()
-            if idx.isdigit():
-                i = int(idx) - 1
-                if 0 <= i < len(tasks):
-                    tasks[i]["done"] = True
-                    print("Marked complete.")
-                else:
-                    print("Invalid number.")
-            else:
-                print("Invalid input.")
-        elif choice == "4":
-            idx = input("Task # to delete: ").strip()
-            if idx.isdigit():
-                i = int(idx) - 1
-                if 0 <= i < len(tasks):
-                    tasks.pop(i)
-                    print("Deleted.")
-                else:
-                    print("Invalid number.")
-            else:
-                print("Invalid input.")
-        elif choice == "5":
-            print("Bye.")
-            break
-        else:
-            print("Unknown option.")
+"""Terminal task manager: add, list, complete, delete tasks."""
+import json, os, sys, argparse
 
-if __name__ == "__main__":
-    main()
+FILE = "tasks.json"
+
+def load(): 
+    if not os.path.exists(FILE): return []
+    with open(FILE) as f: return json.load(f)
+
+def save(t): 
+    with open(FILE,"w") as f: json.dump(t,f,indent=2)
+
+def list_tasks(t): 
+    for i,a in enumerate(t,1): 
+        s='[x]' if a['done'] else '[ ]'
+        print(f"{i}. {s} {a['desc']}")
+
+def main(): 
+    p=argparse.ArgumentParser()
+    sub=p.add_subparsers(dest='cmd')
+    sub.add_parser('list')
+    sub.add_parser('add').add_argument('desc')
+    sub.add_parser('done').add_argument('id',type=int)
+    sub.add_parser('del').add_argument('id',type=int)
+    ns=p.parse_args()
+    tasks=load()
+    if ns.cmd=='list':
+        list_tasks(tasks)
+    elif ns.cmd=='add':
+        tasks.append({'desc':ns.desc,'done':False});save(tasks)
+    elif ns.cmd=='done':
+        if 1<=ns.id<=len(tasks):tasks[ns.id-1]['done']=True;save(tasks)
+    elif ns.cmd=='del':
+        if 1<=ns.id<=len(tasks):tasks.pop(ns.id-1);save(tasks)
+    else:
+        p.print_help()
+
+if __name__=='__main__': main()
